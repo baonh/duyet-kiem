@@ -271,6 +271,13 @@ function Ch(ctx) {
   c.kc = () => c.dich ? Math.hypot(c.dich.pos.x - nv.pos.x, c.dich.pos.z - nv.pos.z) : 99;
   c.quay = (xa) => { if (c.dich && c.kc() < (xa || 40)) nv.ngam(c.dich.pos); c.neo(); };
   c.coDich = xa => !!c.dich && c.kc() <= (xa || 30);
+  /** 2026-11-17 — đích cho trăng bay: mục tiêu đang khoá; không khoá thì bù nhìn gần nhất PHÍA TRƯỚC; không có ai ⇒ null (bay theo hướng mặt) */
+  c.chonDich = (xa = 40) => {
+    let d = DK.khoa && DK.khoa !== nv ? DK.khoa : null;
+    if (d && Math.hypot(d.pos.x - nv.pos.x, d.pos.z - nv.pos.z) > xa) d = null;
+    if (!d) { const f0 = nv.toi(); let bd = xa; for (const b of DK.dsBuNhin) { const v = new V3(b.pos.x - nv.pos.x, 0, b.pos.z - nv.pos.z), l = v.length(); if (l > .1 && l < bd && v.dot(f0) / l > .2) { bd = l; d = b; } } }
+    c.dich = d; return d;
+  };
   c.dichChan = xa => c.coDich(xa) ? c.dich.pos.clone().setY(0) : c.LN(0, 0, 6).setY(0);
   c.huongDich = () => { if (!c.dich) return nv.toi(); const d = new V3().subVectors(c.dich.pos, nv.pos); d.y = 0; return d.lengthSq() > 1e-4 ? d.normalize() : nv.toi(); };
   c.phat = (clip, tron, op) => DK.phat(nv, clip, Object.assign({ tron }, op || {}));
@@ -318,7 +325,7 @@ const trungQuat = (c, r, goc, st, op) => danhTrung(c, goc >= 360 ? DK.trongTron(
 function phongTrang(c, op) {
   const toc = op.toc || 20, tam = op.tam || 20, roll = op.roll || 0, lean = op.lean || 0, mo = op.mo || 1;
   const nBong = op.bong != null ? op.bong : 2;
-  const ds = []; for (let i = 0; i <= nBong; i++) ds.push(taoTrang({ R: op.R || 2, goc: op.goc, day: op.day, quet: op.quet, sang: op.sang, mau: op.mau, loDan: !!op.vung }));
+  const ds = []; for (let i = 0; i <= nBong; i++) ds.push(taoTrang({ R: op.R || 2, goc: op.goc, day: op.day, quet: op.quet != null ? op.quet : ((op.lean || 0) >= 60 ? 0 : undefined), sang: op.sang, mau: op.mau, loDan: !!op.vung }));
   let nguoc = false; const hien = op.hien || .08;
   const G = new T.Group(); ds.forEach(t => G.add(t.g));
   const pos = op.pos.clone(), vel = op.huong.clone().normalize().multiplyScalar(toc), thu = new Set(), lich = [];
@@ -437,7 +444,7 @@ function lon(ctx) {
 // ================================================================ Z — TÀN NGUYỆT PHI TINH
 // Dấu ấn: ba trăng khuyết mực dày viền máu, dựng mặt về máy, nghiêng theo ba nhát (ngang · hất · bổ chéo), bay xa.
 function Z(c) {
-  c.quay(); const nv = c.nv, tg = c.tang, truy = c.nhanh === 'truy_tinh', tan = c.nhanh === 'tan_tinh', liet = tg >= 5;
+  c.chonDich(); c.quay(); const nv = c.nv, tg = c.tang, truy = c.nhanh === 'truy_tinh', tan = c.nhanh === 'tan_tinh', liet = tg >= 5;
   const k = c.dich ? clamp((c.kc() - 2.8) / 2.4, .2, 1) : 1;
   let khoa = truy
     ? '0 HNC_Z_TU · .22 HNC_Z_TU h · .26 HNC_N2_W io · .32 HNC_N2_S s · .42 HNC_N3_W io · .5 HNC_N3_W h · .56 HNC_N3_S s · .68 HNC_N3_G o · 1.0 HNC_THU io'
@@ -448,7 +455,8 @@ function Z(c) {
   c.hen(.04, () => bui(nv.pos.clone(), .5, 6));
   if (liet) c.hen(.03, () => vfx.chu('Tàn Nguyệt Liên Thiên', { mau: '#ff3046', song: 1.4 }));
   // [thời điểm, roll (độ, nghiêng theo nhát), lean, hệ số cỡ]
-  const nhat = truy ? [[.32, -35, 18, 1.1, .7], [.56, 50, 8, 1.25, 0]] : [[.32, 6, 45, 1, 0], [.48, -38, 20, 1, .8], [.68, 52, 6, 1.3, 0]];   // [t, roll, lean, cỡ, hất]
+  // 2026-11-17 — người dùng: trăng phải đi hình khuyết tới đối thủ ⇒ lean 70 (gần 90, ngả 20° cho máy sau lưng thấy mặt): lưng cong (mép cắt) hướng tới, hai mũi chĩa về người chém; roll = góc nhát chém
+  const nhat = truy ? [[.32, -35, 70, 1.1, .7], [.56, 50, 70, 1.25, 0]] : [[.32, 6, 70, 1, 0], [.48, -38, 70, 1, .8], [.68, 52, 70, 1.3, 0]];   // [t, roll, lean, cỡ, hất]
   const K = tg >= 4 ? 1.2 : tg >= 2 ? 1.1 : 1;
   nhat.forEach(([t, roll, lean, co, hat], i) => {
     const cuoi = i === nhat.length - 1;
@@ -477,7 +485,7 @@ function Z(c) {
     c.hen(1.22, () => {
       const h = c.huongDich().clone();
       DK.rung(.35, .35);
-      phongTrang(c, { vung: c.vMui(), pos: nv.quanh(0, 1.5, 1.4), huong: h, toc: 18, tam: 30, R: 4.6, goc: 160, day: 1.7, roll: 4, lean: 30, st: c.st * 2, nang: 3, xuyen: true, quaDat: true, rHit: 4.4, tt: c.tt, cat: true, pha: 2.8, gio: true, ranh: [.8, .5], bong: 3, lon: 1.15 });
+      phongTrang(c, { vung: c.vMui(), pos: nv.quanh(0, 1.5, 1.4), huong: h, toc: 18, tam: 30, R: 4.6, goc: 160, day: 1.7, roll: 4, lean: 72, quet: 0, st: c.st * 2, nang: 3, xuyen: true, quaDat: true, rHit: 4.4, tt: c.tt, cat: true, pha: 2.8, gio: true, ranh: [.8, .5], bong: 3, lon: 1.15 });
     });
   }
 }
@@ -702,7 +710,7 @@ function xeDat(c, a, b, op = {}) {
   }
 }
 function Cc(c) {
-  c.quay(); const nv = c.nv, tg = c.tang, nh = c.nhanh;
+  c.chonDich(); c.quay(); const nv = c.nv, tg = c.tang, nh = c.nhanh;
   if (nh === 'phi_hong_tam_lac') return C3(c);
   const p0 = nv.pos.clone(), f = c.f(), s = c.r();
   const dat = c.dichChan(16);
@@ -726,27 +734,29 @@ function Cc(c) {
   c.hen(.3, () => vetChem(nv, .26, { mau: MUC.clone().addScalar(.15), k0: .1, k1: 1.2, tan: .25 }));
   // pha 4 — BỔ: trăng sinh ra theo đường mũi kiếm (từ trên-sau xuống dưới-trước), lớn dần như vệt chém dày
   c.hen(tB - .02, () => c.vet(.08, { k1: 1.5, tan: .25 }));
+  // 2026-11-17 — người dùng: trăng phải đi hình khuyết tới đối thủ, không tùm lum ⇒ trăng DỌC, mặt phẳng cố định chứa hướng bay,
+  //   lưng cong (mép cắt) hướng tới đích, mũi chĩa về người; sinh theo nhát bổ (hiện từ trên xuống) → bay thẳng, nhanh dần tới đích
+  //   → cắm xuống, cày dọc đúng đường bay (rãnh xẻ); T5 cày tiếp tới chân núi.
+  const goc5 = dat.clone().add(new V3(0, .6, 0)), cham5 = tg >= 5 && dia.chamNui ? dia.chamNui(goc5, f) : null;
+  const dCay = LX + (cham5 ? dat.clone().addScaledVector(f, LX).distanceTo(cham5.clone().setY(0)) : 0);
   c.hen(tB, () => {
-    const C0 = nv.pos.clone().add(new V3(0, 1.3, 0)).addScaledVector(f, .2);
-    const b = f.clone().multiplyScalar(Math.cos(35 * D)).addScaledVector(s, Math.sin(35 * D));   // mặt bổ ngả 35° cho máy sau lưng thấy bề mặt trăng
-    const tm = 30 * D, y = b.clone().multiplyScalar(Math.cos(tm)).addScaledVector(LEN, Math.sin(tm)), x = b.clone().multiplyScalar(Math.sin(tm)).addScaledVector(LEN, -Math.cos(tm));
-    const goc = 160, yOff = RT * (1 + Math.cos(goc / 2 * D)) / 2;
-    const t = taoTrang({ R: RT, goc, day: RT * .42, quet: RT * .15, sang: 1, loDan: true }); t.truc(x, y);
-    const tamCung = C0.clone(), dich = dat.clone().add(new V3(0, .2, 0)).addScaledVector(b, -RT * .55);   // tâm cung lúc tới: trăng cắm nửa thân xuống đất
-    const T0 = c.T(), thoi = .55 + (tg >= 2 ? .15 : 0);
+    const t = taoTrang({ R: RT, goc: 160, day: RT * .42, quet: 0, sang: 1, loDan: true });
+    t.bay(f, 55, 90);                                   // dây cung dựng (ngả 35° quanh hướng bay để máy sau lưng thấy mặt trăng), bụng hướng tới
+    const nguoc = t.trucX().y > 0;                      // hiện từ mũi TRÊN xuống, cùng chiều nhát bổ
+    const C0 = nv.pos.clone().add(new V3(0, 1.2, 0)).addScaledVector(f, RT * .5);
+    const den = dat.clone().addScaledVector(f, -.3).add(new V3(0, RT * .72, 0));   // tâm trăng khi tới đích: mũi dưới chạm đất
+    const T0 = c.T(), thoi = (tCham - tB) + dCay / 26 + .25;
     vfx.them(t.g, thoi, (dt, u, tt) => {
-      const tAll = T0 + tt;
-      let tc;
-      if (tAll < tTach) tc = tamCung;                                               // dính theo nhát chém
-      else { const k = clamp((tAll - tTach) / (tCham - tTach), 0, 1); tc = tamCung.clone().lerp(dich, k * k); }   // tách ra lao xuống
-      if (tAll > tCham) tc = dich.clone().add(new V3(0, -(tAll - tCham) * 3, 0));   // cắm lún vào đất
-      t.g.position.copy(tc).addScaledVector(y, yOff);
-      t.datLo((tAll - tB) / .07, false);
-      t.g.scale.setScalar(.75 + .25 * sm((tAll - tB) / .07) + (tAll > tTach ? .12 * sm((tAll - tTach) / .09) : 0));
-      t.datMo(1 - sm((tAll - tCham - .1) / Math.max(.1, thoi - (tCham - tB) - .1)));
+      const tA = T0 + tt; let p;
+      if (tA < tTach) p = C0;                                                                       // dính theo nhát bổ
+      else if (tA < tCham) { const k = (tA - tTach) / (tCham - tTach); p = C0.clone().lerp(den, k * (.4 + .6 * k)); }   // bay thẳng, nhanh dần
+      else { const x = Math.min(dCay, (tA - tCham) * 26); p = den.clone().addScaledVector(f, x).add(new V3(0, -RT * .42 * sm((tA - tCham) / .12), 0)); }   // cắm xuống, cày dọc đường bay
+      t.g.position.copy(p);
+      t.datLo((tA - tB) / .07, nguoc);
+      t.g.scale.setScalar(.75 + .25 * sm((tA - tB) / .07));
+      t.datMo(1 - sm((tA - (tCham + dCay / 26 - .05)) / .2));
     });
-    // máu–mực rơi theo trăng khi tách
-    c.hen(tTach, () => vfx.hat(C0.clone().addScaledVector(y, RT * .7), { so: 10, mau: MUC, toc: 4, huong: dich.clone().sub(C0), loe: .3, co: .16, song: .45, trongLuc: 6, to: true }));
+    c.hen(tTach, () => vfx.hat(C0.clone(), { so: 10, mau: MUC, toc: 4, huong: den.clone().sub(C0), loe: .3, co: .16, song: .45, trongLuc: 6, to: true }));
   });
   // pha 5 — chạm đất: xẻ dọc theo hướng bổ, đất tách đôi, đá hai bên lật lên
   c.hen(tCham, () => {
@@ -765,11 +775,11 @@ function Cc(c) {
     // Hoá Cảnh: đại phá vùng + đường xẻ chạy thẳng tới chân núi, xẻ núi sập một mảng
     if (tg >= 5) {
       dia.daiPha(g.clone().addScaledVector(f, 2), { r: 15, mau: DO, huong: f, sau: 1.4 });
-      const goc = g.clone().add(new V3(0, .6, 0)), cham = dia.chamNui ? dia.chamNui(goc, f) : null;
+      const cham = cham5;
       if (cham) {
-        const tu = g.clone().addScaledVector(f, LX), den = cham.clone().setY(0), dDen = tu.distanceTo(den);
-        xeDat(c, tu, den, { rong: 1.1, sau: .8, cao: .6, tang: 2, toc: 34, pha: 3 });
-        c.hen(tCham + (LX + dDen) / 30, () => { dia.sapNui(cham, { r: 13, manh: 1, huong: f }); dia.tang(cham, { so: 12, luc: 6, len: 9, co: 1.4, huong: f }); });
+        const tu = g.clone().addScaledVector(f, LX), den = cham.clone().setY(0);
+        c.hen(tCham + LX / 26, () => xeDat(c, tu, den, { rong: 1.1, sau: .8, cao: .6, tang: 2, toc: 26, pha: 3 }));   // trăng cày tiếp tới chân núi
+        c.hen(tCham + dCay / 26, () => { dia.sapNui(cham, { r: 13, manh: 1, huong: f }); dia.tang(cham, { so: 12, luc: 6, len: 9, co: 1.4, huong: f }); });
       }
     }
     // nhánh Nguyệt Lạc Thâm Uyên: vũng máu đọng 3 s, rút máu dần
@@ -955,17 +965,19 @@ function VBacDau(c) {
 //   lưỡi liềm ngang khổng lồ mực–máu → xoay người chém nối, lưỡi thứ hai chéo → vẩy máu, tra kiếm.
 //   Cỡ tăng rõ theo tầng: T1 rộng ~9 m · T4 ~14 m + xẻ đất dài · T5 ~19 m, năm rãnh song song, phá cả sân. Không trăng, không nháy.
 function R(c) {
-  c.quay(); const nv = c.nv, tg = c.tang, nh = c.nhanh, f = c.f(), np = c.np.clone(), sP = c.r();
+  c.chonDich(); c.quay(); const nv = c.nv, tg = c.tang, nh = c.nhanh, f = c.f(), np = c.np.clone(), sP = c.r();
   const giao = nh === 'song_nguyet_giao_huy', doat = nh === 'huyet_nguyet_doat_menh';
   const K = [1, 1.15, 1.3, 1.6, 2.15][tg - 1], RM = 4.4 * K, TAM = [36, 38, 40, 46, 52][tg - 1];
   const kc = c.kc(), toi = c.dich && kc < 8 ? clamp(kc - 2.2, .8, 5) : 3;
+  // 2026-11-17 — lưỡi bay thẳng tới đích, qua đích thêm 8 m rồi tan (không đích: bay hết tầm)
+  const DAI = c.dich && kc < 40 ? clamp(kc - toi + 8, 12, TAM) : TAM;
   c.phat(Clip('hnc_r', '0 HNC_THU · .16 HNC_R_TU o · .3 HNC_R_TU h · .42 HNC_R_THU o · 1.0 HNC_R_THU h · 1.05 HNC_R_S s · 1.3 HNC_R_S h · 1.36 HNC_N5_W io · 1.42 HNC_N5_S o · 1.62 HNC_N5_S h · 1.68 HNC_N1_G s · 1.92 HNC_R_VAY s · 2.08 HNC_R_VAY h · 2.45 HNC_THU io',
     Mv(1, 0, 0, 0, .16, 0, -.45, 1.0, 0, -.45, 1.08, 0, toi, 1.62, 0, toi + .7), { xoay: [1.36, 1.62, 360] }, 1.5), .2);
   if (tg >= 5) c.hen(.03, () => vfx.chu('Huyết Nguyệt Đương Không', { mau: '#ff3046', song: 1.6 }));
   // pha 1 — lùi nửa bước: bụi, mực rỉ dưới chân
   c.hen(.18, () => { bui(nv.pos.clone(), .8, 8); dia.chay(nv.pos.clone(), 1.2, { mau: MUC, manh: .6 }); });
   // pha 2 — tụ lực: xoáy mực–máu quanh thân, vòng đỏ co về, dải báo rộng theo cỡ lưỡi
-  c.hen(.4, () => { vfx.dai(np, np.clone().addScaledVector(f, TAM), { rong: RM * 1.6, song: .62, mau: DO_DAM }); vfx.vong(nv.pos.clone(), { bk0: 3.6 * Math.sqrt(K), bk1: .6, day: .3, song: .58, mau: DO_DAM }); });
+  c.hen(.4, () => { vfx.dai(np, np.clone().addScaledVector(f, DAI + toi), { rong: RM * 1.6, song: .62, mau: DO_DAM }); vfx.vong(nv.pos.clone(), { bk0: 3.6 * Math.sqrt(K), bk1: .6, day: .3, song: .58, mau: DO_DAM }); });
   c.lap((t) => {
     if (t < .42) return true; if (t > 1.0) return false;
     const tamT = nv.pos.clone(), so = tg >= 3 ? 3 : 2;
@@ -979,15 +991,15 @@ function R(c) {
   c.hen(1.0, () => { const g = anhMuc(nv, { op: .5 }); vfx.them(g, .3, (dt, u) => g.datMo(1 - u)); bui(nv.pos.clone(), 1.2, 14); dia.gio(nv.pos.clone(), 3 * K, 1); });
   c.hen(1.04, () => {
     DK.rung(.25 + tg * .04, .35);
-    if (!giao) danhTrung(c, DK.trongDuong(np, np.clone().addScaledVector(f, TAM), RM * 1.6), c.st, { nang: 3, day: 1.2, menh: doat ? .35 : .25, tt: c.tt, hut: doat ? .15 : 0, huong: f });
+    if (!giao) danhTrung(c, DK.trongDuong(np, np.clone().addScaledVector(f, DAI + toi), RM * 1.6), c.st, { nang: 3, day: 1.2, menh: doat ? .35 : .25, tt: c.tt, hut: doat ? .15 : 0, huong: f });
   });
   const goc = () => c.LN(0, tg >= 4 ? .95 : 1.15, toi + .8);
   c.hen(1.07, () => {
     const g0 = goc();
-    const base = { pos: g0, huong: f.clone(), toc: 26 + tg * 2, tam: TAM, R: RM, goc: 158, day: 1.9 * K, roll: -6, lean: 38, xuyen: true, quaDat: true, cat: true, sang: 1, bong: tg >= 2 ? 3 : 2, lon: 1.2 };
+    const base = { pos: g0, huong: f.clone(), toc: 26 + tg * 2, tam: DAI, R: RM, goc: 158, day: 1.9 * K, roll: -6, lean: 72, quet: 0, xuyen: true, quaDat: true, cat: true, sang: 1, bong: tg >= 2 ? 3 : 2, lon: 1.2 };
     if (tg >= 2) base.ranh = [.4 + tg * .1, .25 + tg * .07];
     if (tg >= 4) Object.assign(base, { pha: RM * .7, gio: true });
-    if (doat) Object.assign(base, { R: RM * .8, day: .55 * K, toc: 34, lean: 40 });
+    if (doat) Object.assign(base, { R: RM * .8, day: .55 * K, toc: 34 });
     base.vung = c.vMui();   // lưỡi hiện dần cùng chiều bạt kiếm
     // Hoá Cảnh: lưỡi bay thẳng tới chân núi, xẻ núi sập một mảng; đại phá vùng trước mặt
     if (tg >= 5) {
@@ -997,21 +1009,22 @@ function R(c) {
     }
     if (giao) {
       const dich = c.coDich(30) ? ngucCua(c.dich) : c.LN(0, 1.1, 14);
-      for (const s of [-1, 1]) { const a = g0.clone().addScaledVector(sP, s * 4 * Math.sqrt(K)); phongTrang(c, Object.assign({}, base, { pos: a, huong: dich.clone().sub(a), roll: s * 45, lean: 15, R: RM * .7, day: base.day * .75, st: c.st, nang: 3, tt: c.tt, menh: .25, ranh: null, pha: 0 })); }
+      // hai lưỡi bay SONG SONG cùng hướng tới đích (trên–dưới ngực), không bắt chéo
+      const h2 = dich.clone().sub(g0).setY(0).normalize();
+      for (const s of [-1, 1]) phongTrang(c, Object.assign({}, base, { pos: g0.clone().add(new V3(0, s * .45, 0)), huong: h2, R: RM * .7, day: base.day * .7, st: c.st, nang: 3, tt: c.tt, menh: .25, ranh: null, pha: 0, khiToi: null }));
     } else {
-      phongTrang(c, base);
-      if (tg >= 3 && !doat) for (const s of [-1, 1]) phongTrang(c, Object.assign({}, base, { pos: g0.clone().addScaledVector(sP, s * RM * .85).addScaledVector(f, -1).add(new V3(0, .9, 0)), R: RM * .5, day: base.day * .55, roll: s * 30, lean: 25, mo: .85, ranh: null, pha: 0, bong: 1 }));
+      phongTrang(c, base);   // 2026-11-17 — bỏ hai cánh phụ (không thêm hình phụ)
     }
     // tầng 4+: rãnh song song xẻ dài theo lưỡi (T5 năm rãnh, quét gần cả sân)
     if (tg >= 4) {
       const lech = tg >= 5 ? [-.75, -.38, 0, .38, .75] : [-.45, 0, .45];
-      lech.forEach((l, j) => { const a = np.clone().addScaledVector(sP, l * RM).addScaledVector(f, toi + 1.5), b = a.clone().addScaledVector(f, TAM * (l ? .8 : 1)); ranDan(c, a, b, { rong: l ? .5 : .8, sau: l ? .35 : .55, w: l ? .16 : .24, song: 3.4, toc: base.toc, tre: j * .02, pha: l ? RM * .3 : 0 }); });
+      lech.forEach((l, j) => { const a = np.clone().addScaledVector(sP, l * RM).addScaledVector(f, toi + 1.5), b = a.clone().addScaledVector(f, DAI * (l ? .8 : 1)); ranDan(c, a, b, { rong: l ? .5 : .8, sau: l ? .35 : .55, w: l ? .16 : .24, song: 3.4, toc: base.toc, tre: j * .02, pha: l ? RM * .3 : 0 }); });
     }
   });
   // pha 4 — xoay người chém nối: lưỡi thứ hai chéo hất lên
   c.hen(1.5, () => c.vet(.1, { k1: 1.8, tan: .3 }));
   c.hen(1.56, () => {
-    phongTrang(c, { vung: c.vMui(), hat: .7, pos: goc().add(new V3(0, .4, 0)), huong: f.clone(), toc: 24, tam: TAM * .7, R: RM * .72, goc: 150, day: 1.3 * K, roll: 32, lean: 18, xuyen: true, quaDat: true, cat: true, st: c.st * .4, nang: 1, tt: c.tt, bong: 2, sang: .9, pha: tg >= 4 ? RM * .4 : 0 });
+    phongTrang(c, { vung: c.vMui(), hat: .7, pos: goc().add(new V3(0, .4, 0)), huong: f.clone(), toc: 24, tam: DAI * .8, R: RM * .72, goc: 150, day: 1.3 * K, roll: 32, lean: 72, quet: 0, xuyen: true, quaDat: true, cat: true, st: c.st * .4, nang: 1, tt: c.tt, bong: 2, sang: .9, pha: tg >= 4 ? RM * .4 : 0 });
     DK.rung(.15, .2);
   });
   // Hoá Cảnh: lưỡi thứ ba DỌC bổ từ trên đầu xuống — nhắm đỉnh núi nếu đang hướng về núi (sập cả ngọn), không thì bổ xuống đích
@@ -1020,7 +1033,7 @@ function R(c) {
     const dich = veNui ? N.tam.clone().add(new V3(0, 15, -5)) : (c.coDich(30) ? c.dich.pos.clone().setY(1) : c.LN(0, 1, 12));
     const A = nv.quanh(0, 7, 1.5), hh = dich.clone().sub(A);
     c.hen(1.8, () => c.vet(.1, { k1: 2, tan: .3 }));
-    phongTrang(c, { pos: A, huong: hh, toc: veNui ? 55 : 40, tam: hh.length(), R: 7, goc: 160, day: 2.6, roll: 90, lean: 0, sang: 1, quaDat: true, bong: 3, lon: 1.3, vung: new V3(0, -1, 0),
+    phongTrang(c, { pos: A, huong: hh, toc: veNui ? 55 : 40, tam: hh.length(), R: 7, goc: 160, day: 2.6, roll: 90, lean: 90, sang: 1, quaDat: true, bong: 3, lon: 1.3, vung: new V3(0, -1, 0),
       khiToi: () => {
         DK.rung(.5, 1);
         if (veNui) { dia.sapNui(N.tam, { r: 24, manh: 1, huong: f }); dia.tang(N.tam.clone().add(new V3(0, 10, -8)), { so: 20, luc: 7, len: 6, co: 1.6, huong: f.clone().negate() }); }
@@ -1043,9 +1056,9 @@ DK.dangKyBoNC('huyet_nguyet', {
   moTaChieu: {
     tan_nguyet: 'Lấy đà, lướt tới ba nhát (ngang · hất · bổ chéo), mỗi nhát phóng một trăng khuyết mực dày viền máu, dựng mặt nghiêng theo nhát, bay xa 20 m. T2 to hơn, bóng đuổi, cắt cỏ · T3 nhát chốt MỘT trăng to ×1,2 mạnh hơn (T4 ×1,3, T5 ×1,4) · T4 trăng sà đất xẻ rãnh đỏ, cây trên đường đổ · T5 thêm nhảy xoáy phóng một trăng khổng lồ quét cả hành lang. Tán Tinh: quạt 3 trăng/nhát · Truy Tinh: 2 nhát, trăng đuổi.',
     anh_bo: 'Ám sát, tầm 14 m: hạ thấp → tan thành mực → chuỗi ẢNH MỰC lướt vòng cung ra sau lưng địch (vệt mực loang trên đất) → hiện chếch sau lưng, ĐÂM XUYÊN (máu–mực phụt ra trước), hai nhát cứa in CHỮ X đỏ–đen, địch khựng rỉ máu → X bung máu–mực, địch bị hất → vẩy kiếm, vệt máu trên đất, thu thế. T2 thêm một bước ảnh, X to hơn · T3 thêm nét ngang ⇒ ✳ · T4 dấu X in xuống đất, nứt, cỏ đứt vòng · T5 ba ảnh mực chém trước, nhát bổ dọc kết liễu: đại phá vùng + X rạn đỏ. Phân Thân: ảnh mực lao tới thêm nét dọc · Quỷ Ảnh: ẩn thân 1,5 s, đòn kế ×1,5.',
-    phi_hong: 'MỘT trăng duy nhất. Mực tụ chân (lấy đà) → đạp đất bật (lún, nứt) → xoáy trên không → treo trên đỉnh → BỔ: trăng sinh ra theo đường mũi kiếm từ trên xuống, lớn dần như vệt chém dày → tách khỏi kiếm lao xuống đất → chạm: đường XẺ DỌC chạy theo hướng bổ, đất tách đôi, đá hai bên lật lên. T2 xoáy hai vòng, xẻ 8,5 m · T3 lướt tới rồi mới bật, đá lật nhiều hơn · T4 xẻ 13 m, phá vật dọc đường, cuối đường gai đá · T5 đại phá vùng, đường xẻ chạy tới chân núi, xẻ núi sập một mảng. Thâm Uyên: vũng máu 3 s rút máu · Tam Lạc: ba cú bổ nối nhau, mỗi cú một trăng + xẻ ngắn.',
+    phi_hong: 'MỘT trăng duy nhất. Mực tụ chân (lấy đà) → đạp đất bật (lún, nứt) → xoáy trên không → treo trên đỉnh → BỔ: trăng sinh ra theo đường mũi kiếm từ trên xuống, lớn dần như vệt chém dày → tách khỏi kiếm bay thẳng tới đích (lưng cong hướng tới) → cắm xuống, cày dọc đúng đường bay: đường XẺ DỌC chạy theo hướng bổ, đất tách đôi, đá hai bên lật lên. T2 xoáy hai vòng, xẻ 8,5 m · T3 lướt tới rồi mới bật, đá lật nhiều hơn · T4 xẻ 13 m, phá vật dọc đường, cuối đường gai đá · T5 đại phá vùng, đường xẻ chạy tới chân núi, xẻ núi sập một mảng. Thâm Uyên: vũng máu 3 s rút máu · Tam Lạc: ba cú bổ nối nhau, mỗi cú một trăng + xẻ ngắn.',
     thien_tinh: 'Nghi thức kiếm trận: KẾT ẤN — ấn dưới chân, trận đồ Bắc Đẩu + hai vòng vạch chia vẽ dần trên đất quanh đích → GIƠ KIẾM — bảy khe hư không mở trên trời, bảy kiếm thật to được rút ra, xoay một vòng, treo thành Bắc Đẩu (nét sao nối) → KIẾM CHỈ — cả trận lượn xoắn thành vòng xoay trên đích → giáng có nhịp, cắm đúng bảy sao trên đất → KẾT TRẬN: rạn đỏ nối bảy kiếm, kiếm khí đỏ vọt lên, đất nổ. T2 thêm vòng rạn quanh trận · T3 kiếm to hơn · T4 trận rộng, nổ cấp 2, cây đổ, sóng đất · T5 khe lớn mở, kiếm khổng lồ giáng giữa trận, đại phá cả vùng. Bắc Đẩu: 7 kiếm quay quanh thân 4 s · Lưu Tinh Vũ: 14 kiếm, giáng ngẫu nhiên.',
-    huyet_nguyet: 'Lùi nửa bước thu kiếm → hạ thấp TỤ LỰC (xoáy mực–máu quanh thân, vòng đỏ co về, dải báo rộng theo cỡ lưỡi) → BẠT KIẾM IAI lướt tới, LƯỠI LIỀM NGANG khổng lồ mực–máu → xoay người chém nối, lưỡi thứ hai chéo → vẩy máu, tra kiếm. Cỡ tăng theo tầng: T1 rộng ~9 m · T2 xẻ rãnh · T3 hai cánh lưỡi nhỏ · T4 ~14 m, ba rãnh dài, cây/đèn đổ · T5 ~19 m, đại phá vùng trước mặt, năm rãnh song song, lưỡi bay tới chân núi xẻ sập một mảng, rồi lưỡi dọc khổng lồ bổ xuống đỉnh — SẬP CẢ NGỌN NÚI. Song Nguyệt: hai lưỡi bắt chéo ở đích · Đoạt Mệnh: lưỡi mảnh, Đoạn Mệnh 35 %, hút 15 % máu.',
+    huyet_nguyet: 'Lùi nửa bước thu kiếm → hạ thấp TỤ LỰC (xoáy mực–máu quanh thân, vòng đỏ co về, dải báo rộng theo cỡ lưỡi) → BẠT KIẾM IAI lướt tới, LƯỠI LIỀM NGANG khổng lồ mực–máu (lưng cong hướng tới, bay thẳng tới đích ngang ngực, qua đích 8 m) → xoay người chém nối, lưỡi thứ hai chéo → vẩy máu, tra kiếm. Cỡ tăng theo tầng: T1 rộng ~9 m · T2 xẻ rãnh · T3 lưỡi dày hơn · T4 ~14 m, ba rãnh dài, cây/đèn đổ · T5 ~19 m, đại phá vùng trước mặt, năm rãnh song song, lưỡi bay tới chân núi xẻ sập một mảng, rồi lưỡi dọc khổng lồ bổ xuống đỉnh — SẬP CẢ NGỌN NÚI. Song Nguyệt: hai lưỡi bay song song (trên–dưới) cùng tới đích · Đoạt Mệnh: lưỡi mảnh, Đoạn Mệnh 35 %, hút 15 % máu.',
   },
   tuThe: TU_THE,
   theThu: 'HNC_THU', theDo: 'HNC_DO',
