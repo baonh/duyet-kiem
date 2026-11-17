@@ -492,8 +492,10 @@ function buocNguoiChoi(dt) {
   let vx = 0, vz = 0;
   if (!khoaDi && !nc.dangCuoi) {
     let f = 0, r = 0; if (phim.w || phim.ArrowUp) f++; if (phim.s || phim.ArrowDown) f--; if (phim.d || phim.ArrowRight) r++; if (phim.a || phim.ArrowLeft) r--;
+    // 2026-11-17 — cần đi cảm ứng (mobile.js) cho hướng analog; đẩy gần hết cần = chạy
+    const J = DK.joy; let chayJ = false; if (J && Math.hypot(J.x, J.y) > .15) { f = J.y; r = J.x; chayJ = Math.hypot(J.x, J.y) > .92; }
     if (f || r) {
-      const chay = phim.Shift, toc = (chay ? 7.5 : 4) / DK.NHIP_GOC;   // m/s thật → mô phỏng
+      const chay = phim.Shift || chayJ, toc = (chay ? 7.5 : 4) / DK.NHIP_GOC;   // m/s thật → mô phỏng
       const fy = may.yaw + Math.PI;      // hướng máy nhìn
       const fx = Math.sin(fy), fz = Math.cos(fy), rx = -Math.cos(fy), rz = Math.sin(fy);
       let dx = fx * f + rx * r, dz = fz * f + rz * r; const l = Math.hypot(dx, dz); dx /= l; dz /= l;

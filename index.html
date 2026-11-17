@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Phòng duyệt Kiếm — Phi Thăng Ký</title>
 <style>
 [hidden]{display:none!important}
@@ -58,6 +58,43 @@ select{width:100%;background:#1e2026;color:#e8e4dc;border:1px solid #3a3c44;bord
 .mau.khoa{outline:2px solid #ffd36b}
 #loi{position:fixed;right:10px;top:10px;background:#5a1414;color:#fff;padding:8px 10px;border-radius:6px;z-index:9;max-width:40vw;cursor:pointer}
 #anh,#nhat_ky{display:none}
+/* 2026-11-17 — giao diện điện thoại (mobile.js thêm class dt vào body) */
+#dt_ui{display:none}
+body.dt #dt_ui{display:block}
+body.dt #phim_hd{display:none}
+body.dt #cv{touch-action:none}
+body.dt #bang{width:min(88vw,390px)}
+body.dt.gon #bang{transform:translateX(-100%)}
+body.dt #thu_gon{left:calc(min(88vw,390px) + 4px);top:max(8px,env(safe-area-inset-top));padding:8px 12px;font-size:16px}
+body.dt.gon #thu_gon{left:max(6px,env(safe-area-inset-left))}
+body.dt .trang{padding-bottom:230px}
+body.dt #dieu{grid-template-columns:1fr 1fr;font-size:13px}
+body.dt #dieu select,body.dt #dieu button{padding:8px;font-size:14px}
+body.dt #ten_chieu{font-size:18px;top:10%}
+body.dt .chu_chieu{font-size:26px;letter-spacing:3px}
+#dt_ui button{touch-action:none;-webkit-user-select:none;user-select:none;background:rgba(20,22,28,.55);color:#f2ede4;border:1.5px solid rgba(255,255,255,.28);border-radius:50%;font:700 15px "Segoe UI",system-ui,sans-serif;position:fixed;z-index:4}
+#dt_ui button.an{background:rgba(165,18,31,.75);border-color:#ff5a6a}
+#dt_can{position:fixed;left:calc(22px + env(safe-area-inset-left));bottom:calc(22px + env(safe-area-inset-bottom));width:132px;height:132px;border-radius:50%;background:rgba(20,22,28,.35);border:1.5px solid rgba(255,255,255,.22);z-index:4;touch-action:none}
+#dt_num{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:rgba(240,235,225,.35);border:1.5px solid rgba(255,255,255,.5)}
+#dt_phai{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));width:230px;height:230px;z-index:4}
+#dt_phai button{position:absolute}
+#dt_danh{right:8px;bottom:8px;width:84px;height:84px;font-size:30px}
+#dt_phai .cc{width:52px;height:52px}
+#dt_phai .cc:nth-of-type(2){right:104px;bottom:6px}
+#dt_phai .cc:nth-of-type(3){right:100px;bottom:66px}
+#dt_phai .cc:nth-of-type(4){right:72px;bottom:118px}
+#dt_phai .cc:nth-of-type(5){right:20px;bottom:146px}
+#dt_phai .cc:nth-of-type(6){right:160px;bottom:118px}
+#dt_phai .nho{width:46px;height:46px;font-size:12px}
+#dt_phai .nho:nth-of-type(7){right:164px;bottom:4px}
+#dt_phai .nho:nth-of-type(8){right:158px;bottom:58px}
+#dt_phai .nho:nth-of-type(9){right:-4px;bottom:100px}
+#dt_tren{position:fixed;right:calc(8px + env(safe-area-inset-right));top:calc(8px + env(safe-area-inset-top));display:flex;gap:6px;z-index:4}
+#dt_tren button{position:static;border-radius:8px;padding:7px 10px;font-size:12px}
+@media (orientation:portrait){body.dt #dt_phai{transform:scale(.82);transform-origin:right bottom}body.dt #dt_can{transform:scale(.85);transform-origin:left bottom}body.dt #dt_tren button{padding:6px 7px}
+body.dt::after{content:"Xoay ngang điện thoại để chơi dễ hơn";position:fixed;left:50%;top:56px;transform:translateX(-50%);background:rgba(10,11,14,.7);color:#ddd;font-size:12px;padding:4px 10px;border-radius:6px;pointer-events:none;z-index:3;white-space:nowrap}}
+
+
 </style>
 </head>
 <body>
@@ -134,5 +171,6 @@ select{width:100%;background:#1e2026;color:#e8e4dc;border:1px solid #3a3c44;bord
 <script src="js/bo_anh_sat_nc.js" onerror="this.remove()"></script>
 <script src="js/phap_bao_nc.js" onerror="this.remove()"></script>
 <script src="js/vu_khi_nc.js" onerror="this.remove()"></script>
+<script src="js/mobile.js"></script>
 </body>
 </html>
