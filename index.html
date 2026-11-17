@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phòng duyệt Kiếm — Phi Thăng Ký</title>
+<style>
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#111;font:13px/1.4 "Segoe UI",system-ui,sans-serif;color:#e8e4dc}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block}
+#bang{position:fixed;left:0;top:0;bottom:0;width:390px;background:rgba(14,15,19,.9);border-right:1px solid #2c2d33;display:flex;flex-direction:column;z-index:5}
+body.gon #bang{transform:translateX(-390px)}
+#thu_gon{position:fixed;left:392px;top:8px;z-index:6;background:#22242b;color:#ddd;border:1px solid #3a3c44;border-radius:6px;padding:4px 8px;cursor:pointer}
+body.gon #thu_gon{left:4px}
+h1{font-size:15px;margin:10px 12px 6px;letter-spacing:.5px}
+h1 small{color:#8a8f9a;font-weight:400}
+#tab{display:flex;gap:4px;padding:0 10px 8px;border-bottom:1px solid #2c2d33}
+#tab button,#tang button{background:#1e2026;color:#cfcac0;border:1px solid #33353d;border-radius:6px;padding:5px 9px;cursor:pointer;font:inherit}
+#tab button.chon,#tang button.chon{background:#a5121f;border-color:#d0283a;color:#fff}
+.trang{overflow:auto;padding:8px 10px 120px;flex:1}
+select{width:100%;background:#1e2026;color:#e8e4dc;border:1px solid #3a3c44;border-radius:6px;padding:5px;font:inherit}
+.the{border-left:3px solid #888;padding:6px 8px;margin:8px 0;background:#181a1f;border-radius:4px}
+.nho{color:#a9a49a;font-size:12px}
+.nguon{color:#6f7480;font-size:11px;margin-top:3px}
+.ghi{color:#e6c37a;font-size:12px;margin-top:4px}
+.ytuong{color:#9fe8ff;font-size:12px;margin-top:4px;border-left:2px solid #4fc8ff;padding-left:6px}
+#tang{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+#tang button{padding:3px 6px;font-size:12px}
+.chieu{background:#181a1f;border:1px solid #2a2c33;border-radius:6px;padding:7px 8px;margin:6px 0;cursor:default}
+.chieu.dang{border-color:#d0283a;background:#22161a}
+.chieu.chua{opacity:.72}
+.chieu .dong{display:flex;align-items:center;gap:6px}
+.chieu .dong b{flex:1}
+.phim{display:inline-block;min-width:22px;text-align:center;background:#2c2e36;border:1px solid #464953;border-radius:4px;font-weight:700;font-size:12px}
+.tt{font-size:11px;color:#9bd39b}.chua .tt{color:#ff8a8a}
+.xem{background:#2a5b9a;border:0;color:#fff;border-radius:5px;padding:3px 8px;cursor:pointer;font:inherit;font-size:12px}
+.so{color:#8fb1d8;font-size:11.5px;margin-top:2px}
+.chong{color:#c9a876;font-size:11.5px;margin-top:2px}
+.tang_mt{color:#e6c37a;font-size:12px;margin-top:3px}
+.nhanh{margin-top:5px;font-size:12px}
+.cham{width:14px;height:14px;border-radius:3px;display:inline-block;border:1px solid #0006}
+.pham{font-size:12px;font-weight:600}
+#dieu{position:absolute;bottom:0;left:0;right:0;background:#121318;border-top:1px solid #2c2d33;padding:8px 10px;display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;font-size:12px}
+#dieu label{display:flex;flex-direction:column;gap:2px;color:#9a968e}
+#dieu .hang{grid-column:span 2;display:flex;gap:6px;align-items:center}
+#dieu button{background:#2a2d35;color:#ddd;border:1px solid #3d4049;border-radius:6px;padding:5px 8px;cursor:pointer;font:inherit}
+#phim_hd{position:fixed;right:10px;bottom:10px;background:rgba(10,11,14,.72);border:1px solid #2a2c33;border-radius:8px;padding:8px 10px;font-size:12px;color:#bdb8ae;z-index:4;line-height:1.6}
+#phim_hd b{color:#fff;background:#2c2e36;border-radius:3px;padding:0 4px}
+#ten_chieu{position:fixed;left:50%;top:14%;transform:translateX(-50%);font-size:26px;font-weight:700;letter-spacing:2px;color:#fff;text-shadow:0 2px 8px #000;opacity:0;pointer-events:none;z-index:4;white-space:nowrap}
+#ten_chieu.hien{animation:hien 1.6s ease-out}
+@keyframes hien{0%{opacity:0;transform:translateX(-50%) scale(1.15)}12%{opacity:1;transform:translateX(-50%) scale(1)}75%{opacity:1}100%{opacity:0}}
+
+.so_noi{position:fixed;left:0;top:0;font-weight:800;font-size:18px;text-shadow:0 1px 3px #000,0 0 6px #000;z-index:3}
+.chu_chieu{position:fixed;left:50%;top:40%;font:700 42px/1 "Segoe UI",serif;letter-spacing:6px;text-shadow:0 0 18px currentColor,0 2px 6px #000;pointer-events:none;z-index:4;white-space:nowrap}
+.mau{position:fixed;left:0;top:0;width:70px;height:6px;background:#0008;border:1px solid #000;border-radius:3px;z-index:2;pointer-events:none}
+.mau i{display:block;height:100%;background:#d23a3a;border-radius:2px}
+.mau.khoa{outline:2px solid #ffd36b}
+#loi{position:fixed;right:10px;top:10px;background:#5a1414;color:#fff;padding:8px 10px;border-radius:6px;z-index:9;max-width:40vw;cursor:pointer}
+#anh,#nhat_ky{display:none}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="bang">
+  <h1>PHÒNG DUYỆT KIẾM <small>· dữ liệu thật từ game</small></h1>
+  <div id="tab">
+    <button data-tab="cp">Công pháp kiếm</button>
+    <button data-tab="vk">Vũ khí kiếm</button>
+    <button data-tab="pb">Pháp bảo kiếm</button>
+    <button data-tab="cu">Bộ cũ</button>
+  </div>
+  <div class="trang" id="tr_cp">
+    <select id="chon_bo"></select>
+    <div id="bo_tt"></div>
+    <div class="nho">Tầng công pháp:</div>
+    <div id="tang"></div>
+    <div class="nho" id="combo_tt"></div>
+    <div id="ds_chieu"></div>
+  </div>
+  <div class="trang" id="tr_vk" hidden>
+    <div class="nho">Bấm một thanh để cầm. Vệt chém lấy màu thanh kiếm.</div>
+    <label class="nho">Cấp cường hoá <b id="cap_so">+0</b> <input id="cap" type="range" min="0" max="10" value="0" style="width:100%"></label>
+    <div class="ghi" id="cap_mt"></div>
+    <div id="ds_vk"></div>
+  </div>
+  <div class="trang" id="tr_pb" hidden>
+    <div class="nho">Pháp bảo đánh liên quan kiếm (phím Q):</div>
+    <div id="pb_danh"></div>
+    <div class="nho" style="margin-top:10px">Phi kiếm (pháp bảo cưỡi — phím F ngự kiếm, Space lên, Ctrl xuống):</div>
+    <div id="ds_pb"></div>
+    <div class="ghi" id="pb_ghi"></div>
+  </div>
+  <div class="trang" id="tr_cu" hidden><div id="ds_cu"></div></div>
+  <div id="dieu">
+    <label>Phiên bản<select id="ban"><option value="1" selected>Nâng cấp (đề xuất — chưa có trong game)</option><option value="0">Game hiện tại (đúng Unity)</option></select></label>
+    <label>Tốc độ xem<select id="toc"><option value="1" selected>1× (như game)</option><option value=".5">0,5×</option><option value=".25">0,25×</option><option value=".1">0,1×</option></select></label>
+    <label>Máy quay<select id="may"><option value="sau" selected>Sau lưng (như game)</option><option value="ngang">Nhìn ngang</option><option value="tu_do">Tự do (không bám khoá)</option></select></label>
+    <label>Bù nhìn<select id="bu"><option value="dung">1 con đứng yên</option><option value="do">1 con tự đỡ</option><option value="vong">1 con đi vòng</option><option value="3">3 con</option></select></label>
+    <label>Nền sân<select id="nen"><option value="sang">Sáng (ban ngày)</option><option value="toi" selected>Tối (dễ thấy màu chiêu)</option><option value="dem">Đêm</option></select></label>
+    <label style="flex-direction:row;align-items:center;gap:6px;margin-top:14px"><input type="checkbox" id="lap"> Lặp lại chiêu</label>
+    <div class="hang"><button id="dien">▶ Diễn cả bộ</button><button id="dat_lai">⟲ Đặt lại (Backspace)</button></div>
+  </div>
+</div>
+<button id="thu_gon">☰</button>
+<div id="ten_chieu"></div>
+<div id="phim_hd">
+  <b>WASD</b> đi · <b>Shift</b> chạy/lộn · <b>Space</b> nhảy<br>
+  <b>Chuột trái</b>/<b>J</b> đánh · <b>Chuột phải</b>/<b>K</b> đỡ<br>
+  <b>Z X C V R</b> chiêu · <b>Q</b> phi kiếm trận · <b>F</b> ngự kiếm<br>
+  <b>Tab</b> khoá mục tiêu · kéo chuột xoay máy · lăn = gần/xa<br>
+  nháy đúp = khoá chuột (Esc thoát) · <b>P</b> dừng hình
+</div>
+<div id="loi" hidden onclick="this.hidden=true"></div>
+<script src="vendor/three.min.js"></script>
+<script src="js/du_lieu.js"></script>
+<script src="js/loi.js"></script>
+<script src="js/vfx.js"></script>
+<script src="js/nang_cap.js"></script>
+<script src="js/ui.js"></script>
+<!-- các bộ chiêu (mỗi file một bộ — xem HOP_DONG.md) -->
+<script src="js/bo_huyet_nguyet.js"></script>
+<script src="js/bo_thanh_lien.js"></script>
+<script src="js/bo_van_kiem.js"></script>
+<script src="js/bo_thai_huyen.js"></script>
+<script src="js/bo_anh_sat.js"></script>
+<script src="js/phap_bao.js"></script>
+<script src="js/vu_khi.js"></script>
+<!-- 2026-11-15 — bản nâng cấp (đề xuất) -->
+<script src="js/bo_huyet_nguyet_nc.js" onerror="this.remove()"></script>
+<script src="js/bo_thanh_lien_nc.js" onerror="this.remove()"></script>
+<script src="js/bo_van_kiem_nc.js" onerror="this.remove()"></script>
+<script src="js/bo_thai_huyen_nc.js" onerror="this.remove()"></script>
+<script src="js/bo_anh_sat_nc.js" onerror="this.remove()"></script>
+<script src="js/phap_bao_nc.js" onerror="this.remove()"></script>
+<script src="js/vu_khi_nc.js" onerror="this.remove()"></script>
+</body>
+</html>
